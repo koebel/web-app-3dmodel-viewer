@@ -4,13 +4,16 @@ import config from '../config'
 
 import { Ocis } from '../pageObjects/Ocis'
 import { Viewer } from '../pageObjects/Viewer'
+import { uploadFile } from '../utils/helpers'
+
 
 Given(
   'the user has logged in with username {string} and password {string}',
   async function (user: string, password: string): Promise<void> {
+    const ocis = new Ocis()
     const page = state.page
     await page.goto(config.baseUrlOcis)
-    await Ocis.login({ username: user, password: password })
+    await ocis.login({ username: user, password: password })
   }
 )
 
@@ -18,7 +21,8 @@ Given(
   'the user has uploaded the following 3D models:',
   async function (filesForUpload: DataTable): Promise<void> {
     for (const file of filesForUpload.hashes()) {
-      await Ocis.uploadFile(file.filename)
+      // TODO remember all files that are uploaded
+      await uploadFile(file.filename)
     }
   }
 )

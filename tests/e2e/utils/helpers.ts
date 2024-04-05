@@ -3,31 +3,34 @@ import { xml2js } from 'xml-js'
 import { _ } from 'lodash'
 import config from '../config'
 import _path from 'path'
+import * as fs from "fs";
 
-const sendRequest = ({ method, path }): Promise<any> => {
+const sendRequest = ({ method, path, data=null }): Promise<any> => {
   const headers = {
     Authorization: `Basic ${Buffer.from(`${config.adminUser}:${config.adminPassword}`).toString('base64')}`
   }
   return axios({
     method,
     url: _path.join(config.baseUrlOcis, path),
-    headers
+    headers,
+    data
   })
 }
 
-const deleteFile = async (resource): Promise<void> => {
-  const href = _.get(resource, 'd:href._text')
-  return await sendRequest({ method: 'DELETE', path: href })
+export const deleteFile = async (filename): Promise<void> => {
+  return await sendRequest({ method: 'DELETE', path: _path.join('remote.php/dav/files/admin', filename) })
 }
-
-export const deleteAllFiles = async (): Promise<void> => {
-  const response = await sendRequest({ method: 'PROPFIND', path: 'remote.php/dav/files/admin' })
-  const xmlResponse = response.data
-  const result = xml2js(xmlResponse, { compact: true })
-  const resp = _.get(result, 'd:multistatus.d:response')
-  for (const r in resp) {
-    await deleteFile(r)
-  }
+export const uploadFile = async (filename: string): Promise<void> => {
+  // TODO make dynamic the path
+  const fileUploadUrl = _path.join('remote.php/dav/files/admin', filename)
+  const filePath = _path.join(config.assets, filename)
+  const fileContent = fs.readFileSync(filePath)
+  await sendRequest(
+    {
+      method: 'PUT',
+      path: fileUploadUrl,
+      data: fileContent
+    })
 }
 
 export const emptyTrashbin = async (): Promise<void> => {
